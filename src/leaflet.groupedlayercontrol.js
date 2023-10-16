@@ -9,7 +9,8 @@ L.Control.GroupedLayers = L.Control.extend({
     position: 'topright',
     autoZIndex: true,
     exclusiveGroups: [],
-    groupCheckboxes: false
+    groupCheckboxes: false,
+    baseLayersLabel: false,
   },
 
   initialize: function (baseLayers, groupedOverlays, options) {
@@ -123,6 +124,7 @@ L.Control.GroupedLayers = L.Control.extend({
     this._baseLayersList = L.DomUtil.create('div', className + '-base', form);
     this._separator = L.DomUtil.create('div', className + '-separator', form);
     this._overlaysList = L.DomUtil.create('div', className + '-overlays', form);
+    this._addBaseLayersLabel();
 
     container.appendChild(form);
   },
@@ -169,10 +171,15 @@ L.Control.GroupedLayers = L.Control.extend({
 
     var baseLayersPresent = false,
       overlaysPresent = false,
+      baseLayersLabelPresent = false,
       i, obj;
 
     for (var i = 0; i < this._layers.length; i++) {
       obj = this._layers[i];
+      if (!obj.overlay && !baseLayersLabelPresent) {
+        this._addBaseLayersLabel();
+        baseLayersLabelPresent = true;
+      }
       this._addItem(obj);
       overlaysPresent = overlaysPresent || obj.overlay;
       baseLayersPresent = baseLayersPresent || !obj.overlay;
@@ -366,7 +373,23 @@ L.Control.GroupedLayers = L.Control.extend({
       }
     }
     return -1;
-  }
+  },
+
+  _addBaseLayersLabel: function() {
+    if (!this.options.baseLayersLabel) return;
+
+    var label = document.createElement('label');
+    var name = document.createElement('span');
+
+    label.className = 'leaflet-control-layers-group-label';
+    name.className = 'leaflet-control-layers-group-name';
+    name.innerHTML = '' + this.options.baseLayersLabel;
+
+    label.appendChild(name);
+    this._baseLayersList.appendChild(label);
+
+    return label;
+  },
 });
 
 L.control.groupedLayers = function (baseLayers, groupedOverlays, options) {
