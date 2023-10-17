@@ -228,7 +228,7 @@ L.Control.GroupedLayers = L.Control.extend({
   _addItem: function (obj) {
     var label = document.createElement('label'),
       input,
-      checked = this._map.hasLayer(obj.layer),
+      checked = this._checkLayerAdded(obj.layer, this._map),
       container,
       groupRadioName;
 
@@ -318,34 +318,36 @@ L.Control.GroupedLayers = L.Control.extend({
       if (input.groupID === this.groupID && input.className === 'leaflet-control-layers-selector') {
         input.checked = this.checked;
         obj = this_legend._getLayer(input.layerId);
-        if (input.checked && !this_legend._map.hasLayer(obj.layer)) {
-          this_legend._map.addLayer(obj.layer);
-        } else if (!input.checked && this_legend._map.hasLayer(obj.layer)) {
-          this_legend._map.removeLayer(obj.layer);
-        }
+
+        var isChecked = input.checked;
+        var isAdded = this._checkLayerAdded(obj.layer, this_legend._map);
+
+        if (isChecked && !isAdded) this._addLayerTo(obj.layer, this_legend._map);
+        else if (!isChecked && isAdded) this._removeLayerFrom(obj.layer, this_legend._map);
       }
     }
 
     this_legend._handlingClick = false;
   },
 
-  _onInputClick: function () {
+  _onInputClick: function (event) {
     var i, input, obj,
-      inputs = this._form.getElementsByTagName('input'),
-      inputsLen = inputs.length;
+    inputs = this._form.getElementsByTagName('input'),
+    inputsLen = inputs.length;
 
     this._handlingClick = true;
+    if (event && event.target) this._unselectExclusiveGroupItem(event);
 
     for (i = 0; i < inputsLen; i++) {
       input = inputs[i];
       if (input.className === 'leaflet-control-layers-selector') {
         obj = this._getLayer(input.layerId);
 
-        if (input.checked && !this._map.hasLayer(obj.layer)) {
-          this._map.addLayer(obj.layer);
-        } else if (!input.checked && this._map.hasLayer(obj.layer)) {
-          this._map.removeLayer(obj.layer);
-        }
+        var isChecked = input.checked;
+        var isAdded = this._checkLayerAdded(obj.layer, this._map);
+
+        if (isChecked && !isAdded) this._addLayerTo(obj.layer, this._map);
+        else if (!isChecked && isAdded) this._removeLayerFrom(obj.layer, this._map);
       }
     }
 
@@ -389,6 +391,35 @@ L.Control.GroupedLayers = L.Control.extend({
     this._baseLayersList.appendChild(label);
 
     return label;
+  },
+
+  _addLayerTo: function(layer, map) {
+    var isLayer = layer instanceof L.Layer;
+    if (isLayer) map.addLayer(layer);
+    else layer.addTo(map);
+  },
+
+  _removeLayerFrom: function(layer, map) {
+    var isLayer = layer instanceof L.Layer;
+    if (isLayer) map.removeLayer(layer);
+    else layer.remove();
+  },
+
+  _checkLayerAdded: function(layer, map) {
+    var isLayer = layer instanceof L.Layer;
+    return isLayer ? map.hasLayer(layer) : Boolean(layer._map);
+  },
+
+  _unselectExclusiveGroupItem: function(event) {
+    var input = event.target;
+    var obj = this._getLayer(input.layerId);
+    var isLayer = obj.layer instanceof L.Layer;
+    var isChecked = input.checked;
+    var isAdded = isLayer ? this._map.hasLayer(obj.layer) : Boolean(obj.layer._map);
+
+    if (isChecked && isAdded && obj.group.exclusive) {
+      input.checked = false;
+    }
   },
 });
 
