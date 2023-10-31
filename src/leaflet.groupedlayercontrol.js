@@ -68,6 +68,7 @@ L.Control.GroupedLayers = L.Control.extend({
     var _layer = this._getLayer(id);
     if (_layer) {
       delete this._layers[this._layers.indexOf(_layer)];
+      this._layers = this._layers.filter(Boolean);
     }
     this._update();
     return this;
